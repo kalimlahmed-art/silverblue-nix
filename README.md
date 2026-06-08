@@ -1,43 +1,53 @@
-# silverblue-nix &nbsp; [![bluebuild build badge](https://github.com/kalimlahmed-art/silverblue-nix/actions/workflows/build.yml/badge.svg)](https://github.com/kalimlahmed-art/silverblue-nix/actions/workflows/build.yml)
+# silverblue-nix
 
-See the [BlueBuild docs](https://blue-build.org/how-to/setup/) for quick setup instructions for setting up your own repository based on this template.
+Personal BlueBuild image for Fedora Silverblue.
 
-After setup, it is recommended you update this README to describe your custom image.
+## Scope
 
-## Installation
+This image is intentionally just:
 
-> [!WARNING]  
-> [This is an experimental feature](https://www.fedoraproject.org/wiki/Changes/OstreeNativeContainerStable), try at your own discretion.
+- Fedora 44 `ghcr.io/ublue-os/silverblue-main` base
+- persistent `/nix` bind mount backed by `/var/nix`
 
-To rebase an existing atomic Fedora installation to the latest build:
+No extra RPMs are installed, no base RPMs are removed, and no Flatpaks/GNOME extensions are preinstalled. Install optional apps/extensions later with Flatpak, Extension Manager, or `rpm-ostree install`; if something becomes a permanent host requirement, it can be moved into `recipes/recipe.yml` later.
 
-- First rebase to the unsigned image, to get the proper signing keys and policies installed:
-  ```
-  rpm-ostree rebase ostree-unverified-registry:ghcr.io/kalimlahmed-art/silverblue-nix:latest
-  ```
-- Reboot to complete the rebase:
-  ```
-  systemctl reboot
-  ```
-- Then rebase to the signed image, like so:
-  ```
-  rpm-ostree rebase ostree-image-signed:docker://ghcr.io/kalimlahmed-art/silverblue-nix:latest
-  ```
-- Reboot again to complete the installation
-  ```
-  systemctl reboot
-  ```
+User tools and shell/editor/terminal configuration are managed from the separate dotfiles Home Manager flake.
 
-The `latest` tag will automatically point to the latest build. That build will still always use the Fedora version specified in `recipe.yml`, so you won't get accidentally updated to the next major version.
-
-## ISO
-
-If build on Fedora Atomic, you can generate an offline ISO with the instructions available [here](https://blue-build.org/how-to/generate-iso/#_top). These ISOs cannot unfortunately be distributed on GitHub for free due to large sizes, so for public projects something else has to be used for hosting.
-
-## Verification
-
-These images are signed with [Sigstore](https://www.sigstore.dev/)'s [cosign](https://github.com/sigstore/cosign). You can verify the signature by downloading the `cosign.pub` file from this repo and running the following command:
+## Validate/build
 
 ```bash
-cosign verify --key cosign.pub ghcr.io/kalimlahmed-art/silverblue-nix
+bluebuild validate recipes/recipe.yml
+bluebuild build recipes/recipe.yml
 ```
+
+## Registry/rebase
+
+The image can be hosted on any OCI registry that `rpm-ostree` can pull from: GHCR, a private Gitea container registry, etc. A public GitHub account is not required.
+
+For a public or already-authenticated registry image:
+
+```bash
+sudo rpm-ostree rebase ostree-unverified-registry:REGISTRY/OWNER/silverblue-nix:latest
+sudo systemctl reboot
+```
+
+For a purely local build/rebase, bypass the registry:
+
+```bash
+sudo bluebuild switch recipes/recipe.yml --tempdir /var/tmp
+sudo systemctl reboot
+```
+
+After reboot, check:
+
+```bash
+ls -ld /nix /var/nix
+mount | grep ' /nix '
+systemctl status nix-directory.service nix.mount
+```
+
+Then install Nix with the Determinate installer and apply Home Manager.
+
+## Signed image
+
+BlueBuild can sign pushed images with cosign when a private signing key is available in CI. Keep only `cosign.pub` in git; keep the private key in CI secrets.

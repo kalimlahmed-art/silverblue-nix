@@ -1,0 +1,14 @@
+[Unit]
+Description=Create persistent backing directory for /nix
+Documentation=https://github.com/DeterminateSystems/nix-installer
+After=local-fs.target
+RequiresMountsFor=/var
+Before=nix.mount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/install -d -m 0755 -o root -g root /var/nix
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
