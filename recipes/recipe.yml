@@ -25,6 +25,21 @@ modules:
       enabled:
         - nix-directory.service
         - nix.mount
+        - tailscaled.service
+
+  # RPM Fusion repos are enabled but nothing is installed from them here — they
+  # exist so per-host `rpm-ostree install` (codecs, OBS, etc.) just works.
+  # If image-version above bumps to a new Fedora major, bump the -44 in the
+  # RPM Fusion URLs to match.
+  - type: rpm-ostree
+    repos:
+      - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm
+      - https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-44.noarch.rpm
+      - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+      - https://repository.mullvad.net/rpm/stable/mullvad.repo
+    install:
+      - tailscale
+      - mullvad-vpn
 
   # Sets up the cosign policy/key files used by signed registry images.
   - type: signing
