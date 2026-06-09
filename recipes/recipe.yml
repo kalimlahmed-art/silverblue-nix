@@ -20,17 +20,11 @@ modules:
       - source: system
         destination: /
 
-  - type: systemd
-    system:
-      enabled:
-        - nix-directory.service
-        - nix.mount
-        - tailscaled.service
-
   # RPM Fusion repos are enabled but nothing is installed from them here — they
   # exist so per-host `rpm-ostree install` (codecs, OBS, etc.) just works.
   # If image-version above bumps to a new Fedora major, bump the -44 in the
   # RPM Fusion URLs to match.
+  # Must run before the systemd module so tailscaled.service exists when enabled.
   - type: rpm-ostree
     repos:
       - https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-44.noarch.rpm
@@ -40,6 +34,13 @@ modules:
     install:
       - tailscale
       - mullvad-vpn
+
+  - type: systemd
+    system:
+      enabled:
+        - nix-directory.service
+        - nix.mount
+        - tailscaled.service
 
   # Sets up the cosign policy/key files used by signed registry images.
   - type: signing
