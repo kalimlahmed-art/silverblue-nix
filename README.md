@@ -24,22 +24,25 @@ bluebuild build recipes/recipe.yml
 
 The image can be hosted on any OCI registry that `rpm-ostree` can pull from: GHCR, a private Gitea container registry, etc. A public GitHub account is not required.
 
-First-time rebase to the signed registry image:
+First-time bootstrap is two rebases. The host's default `containers-policy.json` is `insecureAcceptAnything`, which refuses `ostree-image-signed:` on principle. The image we build carries a stricter `policy.json` (via BlueBuild's `signing` module) that knows about this specific image — so we install it via the unverified form first, then switch to signed after the policy lands.
 
 ```bash
-sudo rpm-ostree rebase ostree-image-signed:docker://REGISTRY/OWNER/silverblue-nix:latest
+# Bootstrap: pull the image (carries its own policy + pubkey)
+sudo rpm-ostree rebase ostree-unverified-registry:ghcr.io/OWNER/silverblue-nix:latest
+sudo systemctl reboot
+
+# After reboot, switch to signed
+sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/OWNER/silverblue-nix:latest
 sudo systemctl reboot
 ```
 
-Subsequent upgrades:
+Subsequent upgrades after the signed origin is set:
 
 ```bash
 sudo rpm-ostree upgrade
 # or enable staged auto-updates
 sudo systemctl enable --now rpm-ostreed-automatic.timer
 ```
-
-The unverified form (`ostree-unverified-registry:`) skips signature checks and is only useful for bootstrap/recovery — don't leave a host on it long-term.
 
 For a purely local build/rebase, bypass the registry:
 
