@@ -2,23 +2,19 @@
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 # image will be published to ghcr.io/<user>/<name>
 name: silverblue-nix
-description: Fedora Silverblue 44 with persistent /nix support.
+description: Fedora Silverblue 44 with Determinate Nix bootstrap support.
 
 base-image: ghcr.io/ublue-os/silverblue-main
 # Keep this pinned to the intended Fedora major version.
 image-version: 44
 
 modules:
-  # Create /nix in the ostree commit so a bind mount can land there at boot.
+  # Create /nix in the ostree commit so the Determinate installer has a real
+  # mountpoint on an otherwise immutable root. Do not ship nix.mount or
+  # nix-directory.service here: Determinate's installer owns those units.
   - type: script
     scripts:
       - prepare-nix.sh
-
-  # Ship systemd units for the persistent /nix bind mount.
-  - type: files
-    files:
-      - source: system
-        destination: /
 
   # RPM Fusion repos are enabled but nothing is installed from them here — they
   # exist so per-host `rpm-ostree install` (codecs, OBS, etc.) just works.
@@ -38,8 +34,6 @@ modules:
   - type: systemd
     system:
       enabled:
-        - nix-directory.service
-        - nix.mount
         - tailscaled.service
 
   # Sets up the cosign policy/key files used by signed registry images.
